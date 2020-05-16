@@ -55,10 +55,12 @@ DECLARE
   lv_strings  LIST := list();
   counter NUMBER:= 1;
   
-  i_num NUMBER;
-  i_date NUMBER;
+  TYPE outlist IS TABLE OF VARCHAR2(12);
+  lv_outstrings OUTLIST := outlist();
+
 BEGIN
   lv_strings.EXTEND(3);
+  lv_outstrings.EXTEND(3);
   FOR i IN 1..lv_strings.COUNT LOOP
     IF i = 1 THEN
       lv_strings(counter) := NVL('&1','');
@@ -72,26 +74,18 @@ BEGIN
   
   FOR i IN 1..lv_strings.COUNT LOOP
     IF REGEXP_LIKE(lv_strings(i),'^[[:digit:]]*$') THEN
-       i_num := i;
+       lv_outstrings(1) := lv_strings(i);
+    ELSIF REGEXP_LIKE(lv_strings(i),'^[0-9]{2,2}-[[:alpha:]]{3,3}-([0-9]{2,2}|[0-9]{4,4})$')
+        AND verify_date(lv_strings(i)) IS NOT NULL THEN
+            lv_outstrings(3) := lv_strings(i);
+    ELSIF REGEXP_LIKE(lv_strings(i),'^[[:alnum:]]*$')
+        AND NOT REGEXP_LIKE(lv_strings(i),'^[[:digit:]]*$') THEN
+            lv_outstrings(2) := lv_strings(i);
     END IF;
   END LOOP;
-  FOR i IN 1..lv_strings.COUNT LOOP
-    IF REGEXP_LIKE(lv_strings(i),'^[0-9]{2,2}-[[:alpha:]]{3,3}-([0-9]{2,2}|[0-9]{4,4})$') THEN
-        IF verify_date(lv_strings(i)) IS NOT NULL THEN
-            i_date := i;
-        END IF;
-    END IF;
-  END LOOP;
-  FOR i IN 1..lv_strings.COUNT LOOP
-    IF REGEXP_LIKE(lv_strings(i),'^[[:alnum:]]*$') AND
-        i <> i_num THEN
-        IF i_date <> 0 THEN
-            dbms_output.put_line('Record ['||lv_strings(i_num)||'] ['||lv_strings(i)||'] ['||lv_strings(i_date)||']');
-        ELSE
-            dbms_output.put_line('Record ['||lv_strings(i_num)||'] ['||lv_strings(i)||'] []');
-        END IF;
-    END IF;
-  END LOOP;
+  
+  dbms_output.put_line('Record ['||lv_outstrings(1)||'] ['||lv_outstrings(2)||'] ['||lv_outstrings(3)||']');
+
 END;
 /
 
